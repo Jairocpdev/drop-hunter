@@ -1,4 +1,4 @@
-AWSTemplateFormatVersion: '2010-09-09'
+﻿AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 
 Globals:
@@ -33,12 +33,16 @@ Resources:
         Variables:
           TABLE_NAME: !Ref StockTable
           EVENT_BUS_NAME: default
+    Metadata:
+      DockerTag: latest
+      DockerContext: ./src/scraper
+      Dockerfile: Dockerfile
 
   NotifierFunction:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: drop-hunter-notifier
-      Runtime: python3.11
+      Runtime: python3.12
       CodeUri: src/notifier/
       Handler: app.lambda_handler
       Policies:
