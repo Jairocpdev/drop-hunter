@@ -1,0 +1,9 @@
+@"
+.aws-sam/
+samconfig.toml
+out.json
+payload.json
+__pycache__/
+*.pyc
+.env
+"@ 

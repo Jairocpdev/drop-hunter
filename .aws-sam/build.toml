@@ -9,13 +9,13 @@ manifest_hash = ""
 packagetype = "Zip"
 functions = ["NotifierFunction"]
 
-[function_build_definitions.23071a8c-95b9-4204-84e5-78c353681015]
+[function_build_definitions.3e31a9cd-37f5-4b04-be58-b554586765c2]
 packagetype = "Image"
 functions = ["ScraperFunction"]
 
-[function_build_definitions.23071a8c-95b9-4204-84e5-78c353681015.metadata]
-DockerTag = "latest"
+[function_build_definitions.3e31a9cd-37f5-4b04-be58-b554586765c2.metadata]
 DockerContext = "C:\\dev\\drop-hunter\\src\\scraper"
+DockerTag = "latest"
 Dockerfile = "Dockerfile"
 
 [layer_build_definitions]

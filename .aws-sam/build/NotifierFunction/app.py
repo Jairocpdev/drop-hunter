@@ -1,12 +1,22 @@
 import os
 import json
+import requests
 
 def lambda_handler(event, context):
-    print("Evento recebido:", json.dumps(event))
-    detail = event.get("detail", {})
-    sku = detail.get("sku")
-    stock = detail.get("stock")
+    token = os.environ['BOT_TOKEN']
+    chat_id = os.environ['CHAT_ID']
+    detail = event.get('detail', {})
     
-    print(f"📲 ENVIAR WHATSAPP: 🚨 RARO {sku} voltou com {stock} unidades! - @prints.raros")
+    sku = detail.get('sku', 'PRODUTO DESCONHECIDO')
+    stock = detail.get('stock', 0)
     
-    return {"sent": True}
+    msg = f"🚨 RARO DETECTADO!\n\n{sku}\nVoltou com {stock} unidades!\n\n@prints.raros"
+
+    try:
+        url = f"https://api.telegram.org/bot{token}/sendMessage"
+        r = requests.post(url, json={"chat_id": chat_id, "text": msg}, timeout=10)
+        print(f"Telegram response: {r.text}")
+    except Exception as e:
+        print(f"Erro telegram: {e}")
+
+    return {"ok": True, "sent": msg}
