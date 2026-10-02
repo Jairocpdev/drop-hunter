@@ -40,7 +40,6 @@ Voltou com 140 unidades!
 
 🔗 Comprar: https://www.artwalk.com.br/tenis-nike-dunk-low-retro-masculino-dd139-1-100/p
 
-@prints.raros
 ```
 
 ### 📁 Estrutura
