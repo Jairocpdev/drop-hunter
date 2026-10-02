@@ -1,9 +1,11 @@
-﻿AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Globals:
-  Function:
-    Timeout: 60
 Resources:
+  HunterBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: drop-hunter-events
+
   StockTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -15,27 +17,7 @@ Resources:
       KeySchema:
         - AttributeName: sku
           KeyType: HASH
-  ScraperFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: drop-hunter-scraper
-      PackageType: Image
-      ImageUri: scraperfunction:latest
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName:
-              Ref: StockTable
-        - EventBridgePutEventsPolicy:
-            EventBusName: default
-      Environment:
-        Variables:
-          TABLE_NAME: !Ref StockTable
-          EVENT_BUS_NAME: default
-    Metadata:
-      DockerContext: ./src/scraper
-      DockerTag: latest
-      Dockerfile: Dockerfile
-      SamResourceId: ScraperFunction
+
   NotifierFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -43,50 +25,46 @@ Resources:
       Runtime: python3.12
       CodeUri: ./src/notifier
       Handler: app.lambda_handler
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName:
-              Ref: StockTable
+      Timeout: 30
       Environment:
         Variables:
-          TABLE_NAME: !Ref StockTable
-          BOT_TOKEN: "8944787781:AAHkbb3xY1o0u0q6Yx55daXiHSgR5yJJ-pQ"
-          CHAT_ID: "2036953439"
+          TABLE_NAME: drop-hunter-stock
+          BOT_TOKEN: "{{resolve:ssm:/drop-hunter/bot-token}}"
+          CHAT_ID: "{{resolve:ssm:/drop-hunter/chat-id}}"
+          EVENT_BUS_NAME: drop-hunter-events
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: drop-hunter-stock
       Events:
         StockReturned:
           Type: EventBridgeRule
           Properties:
+            EventBusName: !Ref HunterBus
             Pattern:
               source:
-                - drop.hunter
+                - drop-hunter.scraper
               detail-type:
-                - stock_returned
-  ScraperSchedule:
-    Type: AWS::Scheduler::Schedule
-    Properties:
-      Name: drop-hunter-every-10min
-      ScheduleExpression: rate(10 minutes)
-      FlexibleTimeWindow:
-        Mode: 'OFF'
-      Target:
-        Arn: !GetAtt ScraperFunction.Arn
-        RoleArn: !GetAtt SchedulerRole.Arn
-  SchedulerRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: scheduler.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: InvokeScraper
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action: lambda:InvokeFunction
-                Resource: !GetAtt ScraperFunction.Arn
+                - stock_return
 
+  ArtwalkScraper:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: drop-hunter-artwalk-scraper
+      Runtime: python3.12
+      CodeUri: ./src/artwalk
+      Handler: artwalk_scraper.lambda_handler
+      Timeout: 30
+      Environment:
+        Variables:
+          TABLE_NAME: drop-hunter-stock
+          EVENT_BUS_NAME: drop-hunter-events
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: drop-hunter-stock
+        - EventBridgePutEventsPolicy:
+            EventBusName: !Ref HunterBus
+      Events:
+        Cada2Min:
+          Type: Schedule
+          Properties:
+            Schedule: rate(2 minutes)
